@@ -1,0 +1,125 @@
+Codes Related to NewsLetters Submit from HomePage==
+
+
+
+guardme/local/app/Http/Controllers/ NewsLettersController.php
+
+
+
+guardme/local/resources/views/footer.blade.php
+following code is created by me in footer.php
+
+<div class="row text-center">
+
+
+
+@if ($message = Session::get('success'))
+<div class="alert alert-success alert-block">
+<button type="button" class="close" data-dismiss="alert">×</button>	
+<strong>{{ $message }}</strong>
+</div>
+@endif
+
+@if ($message = Session::get('error'))
+<div class="alert alert-danger alert-block">
+<button type="button" class="close" data-dismiss="alert">×</button>	
+<strong>{{ $message }}</strong>
+</div>
+@endif
+
+</div>
+
+AND
+
+<!-- footer-widget -->
+<div class="col-sm-3">
+<div class="footer-widget news-letter">
+<h3>Newsletter</h3>
+<p>Jobs is Worldest leading Portal platform that brings!</p>
+<!-- form -->
+{{ Form::open(array('url' => 'post_newsletters_subscription','method' => 'POST')) }}
+<input type="email" class="form-control" name="email" placeholder="Your email id">
+<button type="submit" class="btn btn-primary">Sign Up</button>
+{{ Form::close() }}	
+</div>
+</div><!-- footer-widget ends-->
+
+AND NOW FOR NOTIFICATIONS
+===============================
+You are using following code created by me in
+
+guardme/local/app/Http/Controllers/Api/JobsController.php
+
+public function get_notifications_settings(Request $request)
+{
+$settings_exist = @\Responsive\NotificationsSettings::where('user_id',$request->user_id)->count();
+
+if($settings_exist > 0)
+{
+$settings_data = @\Responsive\NotificationsSettings::where('user_id',$request->user_id)->get();
+}
+else
+{
+$settings = new \Responsive\NotificationsSettings;
+$settings->user_id = $request->user_id;
+$settings->save();
+$settings_data = @\Responsive\NotificationsSettings::where('user_id',$request->user_id)->get();
+}
+return response()
+->json($settings_data, 200);
+}
+
+public function update_notifications_settings(Request $request)
+{
+$settings_exist = @\Responsive\NotificationsSettings::where('user_id',$request->user_id)->count();
+
+if($settings_exist > 0)
+{
+Responsive\NotificationsSettings::where('user_id', $request->user_id)->update(['job_created' => $request->job_created , 'job_awarded' => $request->job_awarded ]);
+$settings_data = @\Responsive\NotificationsSettings::where('user_id',$request->user_id)->get();
+}
+else
+{
+$settings = new \Responsive\NotificationsSettings;
+$settings->user_id = $request->user_id;
+$settings->job_created = $request->job_created;
+$settings->job_awarded = $request->job_awarded;
+$settings->save();
+$settings_data = @\Responsive\NotificationsSettings::where('user_id',$request->user_id)->get();
+}
+
+return response()
+->json($settings_data, 200);
+}
+
+public function get_notifications(Request $request)
+{
+$notifications = \Responsive\Notifications::where('user_id',$request->user_id)->orWhere('notification_type','all')->orderBy('id','DESC')->paginate();
+
+foreach($notifications as $n)
+{
+$n->created_at = \Carbon\Carbon::parse($n->created_at)->diffForHumans()."";
+$n->notification_by_user_details = @\Responsive\User::where('id',@$n->notification_by_user_id)->get(['id','name','email','photo']);
+
+if($n->job_id != '' or $n->job_id != null)
+{
+
+$n->job_details = @\Responsive\Job::where('id',@$n->job_id)->get(['id','title','per_hour_rate']);
+}
+else{
+$n->job_details = [];
+}
+
+}
+return response()
+->json($notifications, 200);
+}
+
+public function create_notification($notification_type , $applied_by , $details)
+{
+
+// {notification_by_user_id} hired you for the Job {job_title}
+
+if( $notification_type == 'job_awarded')
+{
+$created_by = $details[0]["created_by
